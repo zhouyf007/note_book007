@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>轻笔记</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell" aria-label="轻笔记应用">
+    <aside class="sidebar" aria-label="笔记列表">
+      <header class="sidebar-header">
+        <div>
+          <h1>轻笔记</h1>
+          <p id="note-count">0 条笔记</p>
+        </div>
+        <button id="new-note" class="icon-button primary" type="button" title="新建笔记" aria-label="新建笔记">+</button>
+      </header>
+
+      <label class="search-box">
+        <span class="sr-only">搜索笔记</span>
+        <input id="search-input" type="search" placeholder="搜索标题或内容">
+      </label>
+
+      <section id="notes-list" class="notes-list" aria-live="polite"></section>
+    </aside>
+
+    <section class="editor-pane" aria-label="笔记内容">
+      <div id="empty-state" class="empty-state">
+        <h2>选择或创建一条笔记</h2>
+        <p>左侧管理列表，右侧专注书写。点击提交笔记后保存到浏览器本地。</p>
+        <button id="empty-new-note" class="text-button" type="button">新建第一条笔记</button>
+      </div>
+
+      <article id="editor" class="editor" hidden>
+        <header class="editor-toolbar">
+          <input id="title-input" class="title-input" type="text" maxlength="80" placeholder="无标题笔记" aria-label="笔记标题">
+          <div class="editor-actions">
+            <button id="submit-note" class="text-button" type="button">提交笔记</button>
+            <button id="delete-note" class="text-button danger" type="button">删除</button>
+          </div>
+        </header>
+        <textarea id="content-input" class="content-input" placeholder="从这里开始记录..." aria-label="笔记内容"></textarea>
+        <footer class="editor-footer">
+          <span id="save-status">已提交</span>
+          <span id="updated-at"></span>
+        </footer>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
