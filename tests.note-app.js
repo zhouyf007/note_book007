@@ -31,6 +31,7 @@ function makeElement() {
     textContent: "",
     type: "",
     title: "",
+    checked: false,
     children: [],
     listeners: {},
     hidden: false,
@@ -51,6 +52,11 @@ function makeElement() {
     click: function () {
       if (this.listeners.click) {
         return this.listeners.click({ stopPropagation: function () {} });
+      }
+    },
+    change: function () {
+      if (this.listeners.change) {
+        return this.listeners.change({ target: this });
       }
     }
   };
@@ -83,13 +89,15 @@ function makeNodes() {
     emptyState: { hidden: false },
     editor: { hidden: true },
     saveStatus: { textContent: "" },
-    updatedAt: { textContent: "" }
+    updatedAt: { textContent: "" },
+    themeToggle: makeElement(),
+    themeLabel: { textContent: "" }
   };
 }
 
 async function withFakeDocument(fn) {
   var originalDocument = global.document;
-  global.document = { createElement: makeElement };
+  global.document = { createElement: makeElement, body: makeElement() };
   try {
     return await fn();
   } finally {
@@ -223,6 +231,22 @@ async function main() {
       assert.strictEqual(second.nodes.titleInput.value, "同步后的标题");
       clearInterval(first.syncTimer);
       clearInterval(second.syncTimer);
+    });
+  });
+
+  await test("NoteApp switches and saves the selected theme", async function () {
+    await withFakeDocument(async function () {
+      var storage = memoryStorage();
+      var nodes = makeNodes();
+      var app = new NotesCore.NoteApp({ storage: storage, nodes: nodes });
+      await app.ready;
+      assert.strictEqual(global.document.body["data-theme"], "light");
+      assert.strictEqual(nodes.themeLabel.textContent, "浅色模式");
+      nodes.themeToggle.checked = true;
+      nodes.themeToggle.change();
+      assert.strictEqual(global.document.body["data-theme"], "dark");
+      assert.strictEqual(nodes.themeLabel.textContent, "深色模式");
+      assert.strictEqual(storage.getItem(NotesCore.THEME_KEY), "dark");
     });
   });
 }

@@ -2,6 +2,7 @@
   "use strict";
 
   var STORAGE_KEY = "light-notes:v1";
+  var THEME_KEY = "light-notes:theme";
   var DEFAULT_TITLE = "无标题笔记";
   var EMPTY_PREVIEW = "空白笔记";
 
@@ -82,6 +83,26 @@
     }
   }
 
+  function normalizeTheme(value) {
+    return value === "dark" ? "dark" : "light";
+  }
+
+  function loadTheme(storage) {
+    try {
+      return normalizeTheme(storage.getItem(THEME_KEY));
+    } catch (error) {
+      return "light";
+    }
+  }
+
+  function saveTheme(storage, theme) {
+    try {
+      storage.setItem(THEME_KEY, normalizeTheme(theme));
+    } catch (error) {
+      return;
+    }
+  }
+
   function createLocalStore(storage) {
     return {
       remote: false,
@@ -149,14 +170,17 @@
 
   function NoteApp(options) {
     this.store = options.store || createLocalStore(options.storage);
+    this.themeStorage = options.themeStorage || options.storage || root.localStorage;
     this.nodes = options.nodes;
     this.notes = [];
     this.selectedId = null;
     this.searchTerm = "";
+    this.theme = loadTheme(this.themeStorage);
     this.saveTimer = null;
     this.syncTimer = null;
     this.isEditing = false;
     this.bindEvents();
+    this.applyTheme();
     this.render();
     this.ready = this.loadInitialNotes();
     this.startSync();
@@ -241,6 +265,30 @@
     this.nodes.deleteNote.addEventListener("click", function () {
       app.deleteSelected();
     });
+    if (this.nodes.themeToggle) {
+      this.nodes.themeToggle.addEventListener("change", function (event) {
+        app.setTheme(event.target.checked ? "dark" : "light");
+      });
+    }
+  };
+
+  NoteApp.prototype.applyTheme = function () {
+    var label = this.theme === "dark" ? "深色模式" : "浅色模式";
+    if (root.document && root.document.body) {
+      root.document.body.setAttribute("data-theme", this.theme);
+    }
+    if (this.nodes.themeToggle) {
+      this.nodes.themeToggle.checked = this.theme === "dark";
+    }
+    if (this.nodes.themeLabel) {
+      this.nodes.themeLabel.textContent = label;
+    }
+  };
+
+  NoteApp.prototype.setTheme = function (theme) {
+    this.theme = normalizeTheme(theme);
+    saveTheme(this.themeStorage, this.theme);
+    this.applyTheme();
   };
 
   NoteApp.prototype.getSelected = function () {
@@ -416,7 +464,9 @@
       titleInput: document.getElementById("title-input"),
       contentInput: document.getElementById("content-input"),
       saveStatus: document.getElementById("save-status"),
-      updatedAt: document.getElementById("updated-at")
+      updatedAt: document.getElementById("updated-at"),
+      themeToggle: document.getElementById("theme-toggle"),
+      themeLabel: document.getElementById("theme-label")
     };
     return new NoteApp({
       store: createDefaultStore(),
@@ -426,6 +476,7 @@
 
   var NotesCore = {
     STORAGE_KEY: STORAGE_KEY,
+    THEME_KEY: THEME_KEY,
     DEFAULT_TITLE: DEFAULT_TITLE,
     createNote: createNote,
     normalizeNotes: normalizeNotes,
@@ -434,6 +485,9 @@
     deriveTitle: deriveTitle,
     saveNotes: saveNotes,
     loadNotes: loadNotes,
+    normalizeTheme: normalizeTheme,
+    loadTheme: loadTheme,
+    saveTheme: saveTheme,
     createLocalStore: createLocalStore,
     createRemoteStore: createRemoteStore,
     NoteApp: NoteApp
