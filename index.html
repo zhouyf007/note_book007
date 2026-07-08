@@ -44,11 +44,19 @@
         <header class="editor-toolbar">
           <input id="title-input" class="title-input" type="text" maxlength="80" placeholder="无标题笔记" aria-label="笔记标题">
           <div class="editor-actions">
+            <div class="mode-switch" aria-label="Markdown 显示模式">
+              <button id="edit-mode" class="mode-button active" type="button">编辑</button>
+              <button id="preview-mode" class="mode-button" type="button">预览</button>
+            </div>
             <button id="submit-note" class="text-button" type="button">提交笔记</button>
             <button id="delete-note" class="text-button danger" type="button">删除</button>
           </div>
         </header>
-        <textarea id="content-input" class="content-input" placeholder="从这里开始记录..." aria-label="笔记内容"></textarea>
+        <div id="markdown-editor" class="markdown-editor">
+          <pre id="markdown-highlight" class="markdown-highlight" aria-hidden="true"></pre>
+          <textarea id="content-input" class="content-input markdown-input" spellcheck="false" placeholder="从这里开始记录..." aria-label="笔记内容"></textarea>
+        </div>
+        <div id="markdown-preview" class="markdown-preview" hidden></div>
         <footer class="editor-footer">
           <span id="save-status">已提交</span>
           <span id="updated-at"></span>

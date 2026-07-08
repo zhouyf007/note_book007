@@ -103,6 +103,140 @@
     }
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function safeHref(value) {
+    var href = String(value || "").trim();
+    if (/^(https?:|mailto:|#)/i.test(href)) {
+      return escapeHtml(href);
+    }
+    return "#";
+  }
+
+  function highlightInlineMarkdown(text) {
+    return escapeHtml(text)
+      .replace(/(`[^`\n]+`)/g, '<span class="md-code">$1</span>')
+      .replace(/(\*\*[^*\n]+\*\*)/g, '<span class="md-strong">$1</span>')
+      .replace(/(\*[^*\n]+\*)/g, '<span class="md-em">$1</span>')
+      .replace(/(\[[^\]\n]+\]\([^)]+\))/g, '<span class="md-link">$1</span>');
+  }
+
+  function highlightMarkdown(markdown) {
+    return String(markdown || "").split(/\n/).map(function (line) {
+      if (/^\s*#{1,6}\s+/.test(line)) {
+        return '<span class="md-heading">' + highlightInlineMarkdown(line) + "</span>";
+      }
+      if (/^\s*>\s?/.test(line)) {
+        return '<span class="md-quote">' + highlightInlineMarkdown(line) + "</span>";
+      }
+      if (/^\s*(-|\*|\+|\d+\.)\s+/.test(line)) {
+        return '<span class="md-list">' + highlightInlineMarkdown(line) + "</span>";
+      }
+      return highlightInlineMarkdown(line);
+    }).join("\n");
+  }
+
+  function renderInlineMarkdown(text) {
+    return escapeHtml(text)
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
+      .replace(/\[([^\]\n]+)\]\(([^)]+)\)/g, function (_match, label, href) {
+        return '<a href="' + safeHref(href) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>";
+      });
+  }
+
+  function renderMarkdown(markdown) {
+    var lines = String(markdown || "").split(/\r?\n/);
+    var html = [];
+    var paragraph = [];
+    var listType = null;
+    var listItems = [];
+    var inCode = false;
+    var codeLines = [];
+
+    function flushParagraph() {
+      if (paragraph.length) {
+        html.push("<p>" + renderInlineMarkdown(paragraph.join(" ")) + "</p>");
+        paragraph = [];
+      }
+    }
+
+    function flushList() {
+      if (listType) {
+        html.push("<" + listType + ">" + listItems.join("") + "</" + listType + ">");
+        listType = null;
+        listItems = [];
+      }
+    }
+
+    lines.forEach(function (line) {
+      var heading = /^(#{1,6})\s+(.+)$/.exec(line);
+      var unordered = /^\s*[-*+]\s+(.+)$/.exec(line);
+      var ordered = /^\s*\d+\.\s+(.+)$/.exec(line);
+      if (/^```/.test(line)) {
+        if (inCode) {
+          html.push("<pre><code>" + escapeHtml(codeLines.join("\n")) + "</code></pre>");
+          codeLines = [];
+          inCode = false;
+        } else {
+          flushParagraph();
+          flushList();
+          inCode = true;
+        }
+        return;
+      }
+      if (inCode) {
+        codeLines.push(line);
+        return;
+      }
+      if (!line.trim()) {
+        flushParagraph();
+        flushList();
+        return;
+      }
+      if (heading) {
+        flushParagraph();
+        flushList();
+        html.push("<h" + heading[1].length + ">" + renderInlineMarkdown(heading[2]) + "</h" + heading[1].length + ">");
+        return;
+      }
+      if (/^>\s?/.test(line)) {
+        flushParagraph();
+        flushList();
+        html.push("<blockquote>" + renderInlineMarkdown(line.replace(/^>\s?/, "")) + "</blockquote>");
+        return;
+      }
+      if (unordered || ordered) {
+        flushParagraph();
+        if (!listType) {
+          listType = unordered ? "ul" : "ol";
+        }
+        if ((unordered && listType !== "ul") || (ordered && listType !== "ol")) {
+          flushList();
+          listType = unordered ? "ul" : "ol";
+        }
+        listItems.push("<li>" + renderInlineMarkdown((unordered || ordered)[1]) + "</li>");
+        return;
+      }
+      paragraph.push(line.trim());
+    });
+
+    if (inCode) {
+      html.push("<pre><code>" + escapeHtml(codeLines.join("\n")) + "</code></pre>");
+    }
+    flushParagraph();
+    flushList();
+    return html.join("");
+  }
+
   function createLocalStore(storage) {
     return {
       remote: false,
@@ -176,6 +310,7 @@
     this.selectedId = null;
     this.searchTerm = "";
     this.theme = loadTheme(this.themeStorage);
+    this.editorMode = "edit";
     this.saveTimer = null;
     this.syncTimer = null;
     this.isEditing = false;
@@ -269,6 +404,49 @@
       this.nodes.themeToggle.addEventListener("change", function (event) {
         app.setTheme(event.target.checked ? "dark" : "light");
       });
+    }
+    if (this.nodes.editMode) {
+      this.nodes.editMode.addEventListener("click", function () {
+        app.setEditorMode("edit");
+      });
+    }
+    if (this.nodes.previewMode) {
+      this.nodes.previewMode.addEventListener("click", function () {
+        app.setEditorMode("preview");
+      });
+    }
+    if (this.nodes.contentInput && this.nodes.markdownHighlight) {
+      this.nodes.contentInput.addEventListener("scroll", function () {
+        app.nodes.markdownHighlight.scrollTop = app.nodes.contentInput.scrollTop;
+        app.nodes.markdownHighlight.scrollLeft = app.nodes.contentInput.scrollLeft;
+      });
+    }
+  };
+
+  NoteApp.prototype.setEditorMode = function (mode) {
+    this.editorMode = mode === "preview" ? "preview" : "edit";
+    this.renderMarkdownViews();
+  };
+
+  NoteApp.prototype.renderMarkdownViews = function () {
+    var selected = this.getSelected();
+    var content = selected ? selected.content : "";
+    var isPreview = this.editorMode === "preview";
+    if (this.nodes.markdownHighlight) {
+      this.nodes.markdownHighlight.innerHTML = highlightMarkdown(content) + "\n";
+    }
+    if (this.nodes.markdownPreview) {
+      this.nodes.markdownPreview.innerHTML = renderMarkdown(content);
+      this.nodes.markdownPreview.hidden = !isPreview;
+    }
+    if (this.nodes.markdownEditor) {
+      this.nodes.markdownEditor.hidden = isPreview;
+    }
+    if (this.nodes.editMode) {
+      this.nodes.editMode.className = "mode-button" + (!isPreview ? " active" : "");
+    }
+    if (this.nodes.previewMode) {
+      this.nodes.previewMode.className = "mode-button" + (isPreview ? " active" : "");
     }
   };
 
@@ -444,6 +622,7 @@
     if (this.nodes.contentInput.value !== selected.content) {
       this.nodes.contentInput.value = selected.content;
     }
+    this.renderMarkdownViews();
     this.nodes.updatedAt.textContent = "更新于 " + formatTime(selected.updatedAt);
   };
 
@@ -466,7 +645,12 @@
       saveStatus: document.getElementById("save-status"),
       updatedAt: document.getElementById("updated-at"),
       themeToggle: document.getElementById("theme-toggle"),
-      themeLabel: document.getElementById("theme-label")
+      themeLabel: document.getElementById("theme-label"),
+      editMode: document.getElementById("edit-mode"),
+      previewMode: document.getElementById("preview-mode"),
+      markdownEditor: document.getElementById("markdown-editor"),
+      markdownHighlight: document.getElementById("markdown-highlight"),
+      markdownPreview: document.getElementById("markdown-preview")
     };
     return new NoteApp({
       store: createDefaultStore(),
@@ -488,6 +672,9 @@
     normalizeTheme: normalizeTheme,
     loadTheme: loadTheme,
     saveTheme: saveTheme,
+    escapeHtml: escapeHtml,
+    highlightMarkdown: highlightMarkdown,
+    renderMarkdown: renderMarkdown,
     createLocalStore: createLocalStore,
     createRemoteStore: createRemoteStore,
     NoteApp: NoteApp

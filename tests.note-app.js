@@ -29,12 +29,15 @@ function makeElement() {
   return {
     className: "",
     textContent: "",
+    innerHTML: "",
     type: "",
     title: "",
     checked: false,
     children: [],
     listeners: {},
     hidden: false,
+    scrollTop: 0,
+    scrollLeft: 0,
     appendChild: function (child) {
       this.children.push(child);
     },
@@ -91,7 +94,12 @@ function makeNodes() {
     saveStatus: { textContent: "" },
     updatedAt: { textContent: "" },
     themeToggle: makeElement(),
-    themeLabel: { textContent: "" }
+    themeLabel: { textContent: "" },
+    editMode: makeElement(),
+    previewMode: makeElement(),
+    markdownEditor: makeElement(),
+    markdownHighlight: makeElement(),
+    markdownPreview: makeElement()
   };
 }
 
@@ -247,6 +255,35 @@ async function main() {
       assert.strictEqual(global.document.body["data-theme"], "dark");
       assert.strictEqual(nodes.themeLabel.textContent, "深色模式");
       assert.strictEqual(storage.getItem(NotesCore.THEME_KEY), "dark");
+    });
+  });
+
+  await test("renderMarkdown renders common markdown and escapes html", function () {
+    var html = NotesCore.renderMarkdown("# 标题\n\n**重点** 和 `code`\n\n<script>alert(1)</script>");
+    assert.ok(html.indexOf("<h1>标题</h1>") !== -1);
+    assert.ok(html.indexOf("<strong>重点</strong>") !== -1);
+    assert.ok(html.indexOf("<code>code</code>") !== -1);
+    assert.ok(html.indexOf("<script>") === -1);
+    assert.ok(html.indexOf("&lt;script&gt;") !== -1);
+  });
+
+  await test("NoteApp toggles from markdown edit mode to preview mode", async function () {
+    await withFakeDocument(async function () {
+      var notes = [
+        { id: "a", title: "Markdown", content: "# 标题\n\n- 项目", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" }
+      ];
+      var storage = memoryStorage({ "light-notes:v1": JSON.stringify(notes) });
+      var nodes = makeNodes();
+      var app = new NotesCore.NoteApp({ storage: storage, nodes: nodes });
+      await app.ready;
+      assert.strictEqual(nodes.markdownEditor.hidden, false);
+      assert.strictEqual(nodes.markdownPreview.hidden, true);
+      assert.ok(nodes.markdownHighlight.innerHTML.indexOf("md-heading") !== -1);
+      nodes.previewMode.click();
+      assert.strictEqual(app.editorMode, "preview");
+      assert.strictEqual(nodes.markdownEditor.hidden, true);
+      assert.strictEqual(nodes.markdownPreview.hidden, false);
+      assert.ok(nodes.markdownPreview.innerHTML.indexOf("<h1>标题</h1>") !== -1);
     });
   });
 }
