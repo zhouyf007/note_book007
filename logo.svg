@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Notes logo</title>
+  <desc id="desc">A clear note app mark with a notebook, folded page, and writing stroke.</desc>
+  <style>
+    :root {
+      --bg: #f7f4ed;
+      --panel: #ffffff;
+      --ink: #17342d;
+      --muted: #6f7b76;
+      --accent: #1f7a65;
+      --accent-strong: #145c4b;
+      --spark: #f6b44b;
+      --shadow: rgba(32, 33, 36, 0.14);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101412;
+        --panel: #1b2220;
+        --ink: #f2f7f4;
+        --muted: #a8b4af;
+        --accent: #5cc2a2;
+        --accent-strong: #38a987;
+        --spark: #ffd37a;
+        --shadow: rgba(0, 0, 0, 0.45);
+      }
+    }
+  </style>
+
+  <rect width="128" height="128" rx="28" fill="var(--bg)"/>
+  <path d="M32 107c-9.94 0-18-8.06-18-18V39c0-9.94 8.06-18 18-18h64c9.94 0 18 8.06 18 18v50c0 9.94-8.06 18-18 18H32Z" fill="var(--shadow)"/>
+  <path d="M31 102c-9.39 0-17-7.61-17-17V35c0-9.39 7.61-17 17-17h62c9.39 0 17 7.61 17 17v50c0 9.39-7.61 17-17 17H31Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="4"/>
+  <path d="M84 18v23c0 4.42 3.58 8 8 8h18" fill="none" stroke="var(--ink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M85 20 108 48H93c-4.42 0-8-3.58-8-8V20Z" fill="var(--accent)" opacity="0.2"/>
+
+  <path d="M34 42h34" fill="none" stroke="var(--muted)" stroke-linecap="round" stroke-width="5"/>
+  <path d="M34 57h42" fill="none" stroke="var(--muted)" stroke-linecap="round" stroke-width="5"/>
+  <path d="M34 72h25" fill="none" stroke="var(--muted)" stroke-linecap="round" stroke-width="5"/>
+
+  <path d="M36 87c10.68-16.9 23.24-20.55 36.16-10.25 5.55 4.42 11.93 4.26 19.84-.75" fill="none" stroke="var(--accent)" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+  <path d="M86.5 83.5 99 71l9 9-12.5 12.5-12 3 3-12Z" fill="var(--spark)" stroke="var(--ink)" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M99 71 105 65c2.49-2.49 6.51-2.49 9 0s2.49 6.51 0 9l-6 6-9-9Z" fill="var(--accent-strong)" stroke="var(--ink)" stroke-linejoin="round" stroke-width="4"/>
+</svg>

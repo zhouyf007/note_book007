@@ -80,9 +80,20 @@ button {
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 24px 20px 14px;
+}
+
+.app-logo {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.sidebar-header > div {
+  min-width: 0;
+  flex: 1;
 }
 
 .sidebar-header h1 {
